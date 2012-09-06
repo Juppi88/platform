@@ -216,7 +216,7 @@ void* create_system_window( int x, int y, int w, int h, char_t* title, bool bord
 	wc.lpfnWndProc		= DefWindowProc;
 	wc.hInstance		= GetModuleHandle(NULL);
 	wc.lpszClassName	= _TEXT("mylly_window");
-	wc.hCursor			= LoadCursor( NULL, IDC_ARROW );
+	wc.hCursor			= NULL;
 
 	RegisterClass( &wc );
 
@@ -391,6 +391,45 @@ const char_t* paste_from_clipboard( void )
 	GlobalUnlock( mem );
 
 	return text;
+}
+
+/**************************************************
+	set_mouse_cursor
+**************************************************/
+void set_mouse_cursor( MOUSECURSOR cursor )
+{
+	static HCURSOR cursors[NUM_CURSORS] = { NULL };
+
+	if ( cursor >= NUM_CURSORS ) return;
+
+	if ( !cursors[cursor] )
+	{
+		// The cursor needs to be loaded first
+		switch ( cursor )
+		{
+		case CURSOR_ARROW:
+			cursors[cursor] = LoadCursor( NULL, IDC_ARROW );
+			break;
+
+		case CURSOR_TEXT:
+			cursors[cursor] = LoadCursor( NULL, IDC_IBEAM );
+			break;
+
+		case CURSOR_CROSSHAIR:
+			cursors[cursor] = LoadCursor( NULL, IDC_CROSS );
+			break;
+
+		case CURSOR_MOVE:
+			cursors[cursor] = LoadCursor( NULL, IDC_SIZEALL );
+			break;
+
+		case CURSOR_FORBIDDEN:
+			cursors[cursor] = LoadCursor( NULL, IDC_NO );
+			break;
+		}
+	}
+
+	SetCursor( cursors[cursor] );
 }
 
 #endif /* _WIN32 */

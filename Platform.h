@@ -26,6 +26,15 @@
 
 typedef struct timer_s* timer_t;
 
+typedef enum
+{
+	CURSOR_ARROW,
+	CURSOR_TEXT,
+	CURSOR_CROSSHAIR,
+	CURSOR_MOVE,
+	CURSOR_FORBIDDEN,
+	NUM_CURSORS
+} MOUSECURSOR;
 
 __BEGIN_DECLS
 
@@ -73,6 +82,8 @@ MYLLY_API void					set_window_size					( void* window, uint16 x, uint16 y );
 
 MYLLY_API void					copy_to_clipboard				( const char_t* text );
 MYLLY_API const char_t*			paste_from_clipboard			( void );
+
+MYLLY_API void					set_mouse_cursor				( MOUSECURSOR cursor );
 
 __END_DECLS
 
