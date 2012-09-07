@@ -390,6 +390,8 @@ const char_t* paste_from_clipboard( void )
 
 	GlobalUnlock( mem );
 
+	CloseClipboard();
+
 	return text;
 }
 
