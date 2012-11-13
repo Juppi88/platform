@@ -14,7 +14,7 @@
 #ifndef __LIB_PLATFORM_H
 #define __LIB_PLATFORM_H
 
-#include "Defines.h"
+#include "stdtypes.h"
 
 #if defined( _WIN32 )
 	typedef uint32 ( __stdcall  *thread_func_t )( void* args );

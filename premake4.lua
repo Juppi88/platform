@@ -1,6 +1,6 @@
 -- A library for all platform specific functionality
 
-project "Platform"
+project "Lib-Platform"
 	kind "StaticLib"
 	language "C"
 	files { "**.h", "**.c", "premake4.lua" }
