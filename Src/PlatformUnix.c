@@ -19,6 +19,9 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdlib.h>
+#include <malloc.h>
+#include <string.h>
 
 /**************************************************
 	lib_open
@@ -47,6 +50,14 @@ int lib_close( void* handle )
 {
 	if ( !handle ) return 0;
 	return dlclose( handle ) ? 0 : 1;
+}
+
+/**************************************************
+	lib_error
+**************************************************/
+const char* lib_error( void )
+{
+	return dlerror();
 }
 
 /**************************************************
@@ -116,6 +127,17 @@ void mem_free( void* ptr )
 {
 	if ( !ptr ) return;
 	free( ptr );
+}
+
+/**************************************************
+	get_tick_count
+**************************************************/
+uint32 get_tick_count( void )
+{
+	struct timespec now;
+	clock_gettime( CLOCK_MONOTONIC, &now );
+
+	return (uint32)( (now.tv_sec * 1000000000LL + now.tv_nsec ) / 1000000LL );
 }
 
 #endif /* _WIN32 */

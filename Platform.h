@@ -21,10 +21,10 @@
 	#define _THREAD_FUNC( func ) unsigned int __stdcall func( void* args )
 #else
 	typedef void* ( *thread_func_t )( void* args );
-	#define _THREAD_FUNC( func ) void* func( void* pArgs )
+	#define _THREAD_FUNC( func ) void* func( void* args )
 #endif
 
-typedef struct timer_s* timer_t;
+typedef struct systimer_s systimer_t;
 
 typedef enum
 {
@@ -44,6 +44,7 @@ __BEGIN_DECLS
 MYLLY_API void*					lib_open						( const char* file );
 MYLLY_API void*					lib_symbol						( void* handle, const char* name );
 MYLLY_API int					lib_close						( void* handle );
+MYLLY_API const char*			lib_error						( void );
 
 //
 // Thread related functions
@@ -59,12 +60,12 @@ MYLLY_API void*					mem_alloc_clean					( uint32 size );
 MYLLY_API void					mem_free						( void* ptr );
 
 //
-// Timer functions
+// Time/timer functions
 //
-MYLLY_API uint32				timer_get_ticks					( void );
-MYLLY_API timer_t				timer_create					( float interval );
-MYLLY_API void					timer_destroy					( timer_t timer );
-MYLLY_API float					timer_wait						( timer_t timer, bool wait );
+MYLLY_API uint32				get_tick_count					( void );
+MYLLY_API systimer_t*			systimer_create					( float interval );
+MYLLY_API void					systimer_destroy				( systimer_t* timer );
+MYLLY_API float					systimer_wait					( systimer_t* timer, bool wait );
 
 //
 // Window system

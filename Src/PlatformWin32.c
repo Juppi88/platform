@@ -23,7 +23,7 @@
 
 static float			_timerfreq = 0.0f;
 
-struct timer_s
+struct systimer_s
 {
 	HANDLE			handle;
 	LARGE_INTEGER	interval;
@@ -66,6 +66,14 @@ int lib_close( void* handle )
 	if ( !handle ) return 0;
 
 	return FreeLibrary( (HMODULE)handle );
+}
+
+/**************************************************
+	lib_error
+**************************************************/
+const char* lib_error( void )
+{
+	return "";
 }
 
 /**************************************************
@@ -133,9 +141,9 @@ void mem_free( void* ptr )
 
 
 /**************************************************
-	timer_get_ticks
+	get_tick_count
 **************************************************/
-uint32 timer_get_ticks( void )
+uint32 get_tick_count( void )
 {
 	return (uint32)GetTickCount();
 }
@@ -143,9 +151,9 @@ uint32 timer_get_ticks( void )
 /**************************************************
 	timer_create
 **************************************************/
-timer_t timer_create( float interval )
+systimer_t* systimer_create( float interval )
 {
-	timer_t			timer;
+	systimer_t*		timer;
 	LARGE_INTEGER	frequency;
 
 	if ( !_timerfreq )
@@ -155,7 +163,7 @@ timer_t timer_create( float interval )
 		_timerfreq = (float)frequency.QuadPart;
 	}
 
-	timer = (timer_t)mem_alloc( sizeof(*timer) );
+	timer = mem_alloc( sizeof(*timer) );
 
 	timer->handle				= CreateWaitableTimer( NULL, TRUE, NULL );
 	timer->interval.QuadPart	= (LONGLONG)( (double)interval * -10000000.0 );
@@ -169,9 +177,9 @@ timer_t timer_create( float interval )
 /**************************************************
 	timer_destroy
 **************************************************/
-void timer_destroy( timer_t timer )
+void systimer_destroy( systimer_t* timer )
 {
-	if ( !timer ) return;
+	assert( timer != NULL );
 
 	CloseHandle( timer->handle );
 	mem_free( timer );
@@ -180,12 +188,12 @@ void timer_destroy( timer_t timer )
 /**************************************************
 	timer_wait
 **************************************************/
-float timer_wait( timer_t timer, bool wait )
+float systimer_wait( systimer_t* timer, bool wait )
 {
 	LARGE_INTEGER tick;
 	float delta;
 
-	if ( !timer ) return 0.0f;
+	assert( timer != NULL );
 
 	if ( wait )
 	{
