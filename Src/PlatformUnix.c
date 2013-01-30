@@ -93,7 +93,7 @@ void* mem_alloc( uint32 size )
 	if ( !ptr )
 	{
 		// TODO: Add a message or something nicer here. For now, just kill the app.
-		exit( 1 );
+		exit( EXIT_FAILURE );
 	}
 
 	return ptr;
@@ -113,7 +113,7 @@ void* mem_alloc_clean( uint32 size )
 	if ( !ptr )
 	{
 		// TODO: Add a message or something nicer here. For now, just kill the app.
-		exit( 1 );
+		exit( EXIT_FAILURE );
 	}
 
 	memset( ptr, 0, size );
@@ -138,6 +138,14 @@ uint32 get_tick_count( void )
 	clock_gettime( CLOCK_MONOTONIC, &now );
 
 	return (uint32)( (now.tv_sec * 1000000000LL + now.tv_nsec ) / 1000000LL );
+}
+
+/**************************************************
+	get_working_directory
+**************************************************/
+char* get_working_directory( char* buffer, size_t len )
+{
+	return getcwd( buffer, len );
 }
 
 #endif /* _WIN32 */

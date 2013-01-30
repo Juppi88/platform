@@ -68,6 +68,11 @@ MYLLY_API void					systimer_destroy				( systimer_t* timer );
 MYLLY_API float					systimer_wait					( systimer_t* timer, bool wait );
 
 //
+// Misc functions
+//
+MYLLY_API char*					get_working_directory			( char* buffer, size_t len );
+
+//
 // Window system
 //
 MYLLY_API void*					create_system_window			( int x, int y, int w, int h, char_t* title, bool border );
@@ -85,6 +90,8 @@ MYLLY_API void					copy_to_clipboard				( const char_t* text );
 MYLLY_API const char_t*			paste_from_clipboard			( void );
 
 MYLLY_API void					set_mouse_cursor				( MOUSECURSOR cursor );
+
+MYLLY_API void					exit_app_with_error				( const char_t* errormsg );
 
 __END_DECLS
 

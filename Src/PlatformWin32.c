@@ -20,6 +20,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
+#include <direct.h>
 
 static float			_timerfreq = 0.0f;
 
@@ -211,6 +212,14 @@ float systimer_wait( systimer_t* timer, bool wait )
 }
 
 /**************************************************
+	get_working_directory
+**************************************************/
+char* get_working_directory( char* buffer, size_t len )
+{
+	return _getcwd( buffer, (int)len );
+}
+
+/**************************************************
 	create_system_window
 **************************************************/
 void* create_system_window( int x, int y, int w, int h, char_t* title, bool border )
@@ -223,7 +232,7 @@ void* create_system_window( int x, int y, int w, int h, char_t* title, bool bord
 	wc.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DROPSHADOW;
 	wc.lpfnWndProc		= DefWindowProc;
 	wc.hInstance		= GetModuleHandle(NULL);
-	wc.lpszClassName	= _TEXT("mylly_window");
+	wc.lpszClassName	= _MTEXT("mylly_window");
 	wc.hCursor			= NULL;
 
 	RegisterClass( &wc );
@@ -440,6 +449,16 @@ void set_mouse_cursor( MOUSECURSOR cursor )
 	}
 
 	SetCursor( cursors[cursor] );
+}
+
+/**************************************************
+	exit_app_with_error
+**************************************************/
+void exit_app_with_error( const char_t* errormsg )
+{
+	MessageBox( 0, errormsg, "Error", MB_OK );
+	SetForegroundWindow( HWND_DESKTOP );
+	ExitProcess( 1 );
 }
 
 #endif /* _WIN32 */
