@@ -164,7 +164,7 @@ systimer_t* systimer_create( float interval )
 		_timerfreq = (float)frequency.QuadPart;
 	}
 
-	timer = mem_alloc( sizeof(*timer) );
+	timer = (systimer_t*)mem_alloc( sizeof(*timer) );
 
 	timer->handle				= CreateWaitableTimer( NULL, TRUE, NULL );
 	timer->interval.QuadPart	= (LONGLONG)( (double)interval * -10000000.0 );
@@ -275,7 +275,7 @@ void process_window_messages( void* window, bool (*callback)(void*) )
 {
 	MSG msg;
 	
-	while ( PeekMessage( &msg, window, 0, 0, PM_REMOVE ) )
+	while ( PeekMessage( &msg, (HWND)window, 0, 0, PM_REMOVE ) )
 	{
 		if ( callback )
 		{
@@ -401,7 +401,7 @@ const char_t* paste_from_clipboard( void )
 	data = (const char_t*)GlobalLock( mem );
 
 	size = mstrsize( data );
-	text = mem_alloc( size );
+	text = (char_t*)mem_alloc( size );
 
 	mstrcpy( text, data, size );
 
