@@ -17,12 +17,13 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include "stdtypes.h"
 
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include "alloca.h"
-#endif
+static void*	mem_alloc		( size_t size );
+static void*	mem_alloc_clean	( size_t size );
+static void		mem_free		( void* ptr );
+static void*	mem_stack_alloc	( size_t size );
+static void		mem_stack_free	( void* ptr );
 
 static __inline void* mem_alloc( size_t size )
 {
@@ -50,9 +51,10 @@ static __inline void mem_free( void* ptr )
 	free( ptr );
 }
 
+#ifdef _WIN32
+
 static __inline void* mem_stack_alloc( size_t size )
 {
-#ifdef _WIN32
 	__try
 	{
 		return _malloca( size );
@@ -61,18 +63,27 @@ static __inline void* mem_stack_alloc( size_t size )
 	{
 		exit( EXIT_FAILURE );
 	}
-#else
-	return alloca( size );
-#endif
 }
 
 static __inline void mem_stack_free( void* ptr )
 {
-#ifdef _WIN32
 	_freea( ptr );
-#else
-	return;
-#endif
 }
+
+#else
+
+#include <alloca.h>
+
+static __inline void* mem_stack_alloc( size_t size )
+{
+	return alloca( size );
+}
+
+static __inline void mem_stack_free( void* ptr )
+{
+	return;
+}
+
+#endif
 
 #endif /* __ALLOC_H */
