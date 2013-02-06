@@ -14,6 +14,7 @@
 #ifdef _WIN32
 
 #include "Platform.h"
+#include "Alloc.h"
 #include "Stringy/Stringy.h"
 #include <stdio.h>
 #include <process.h>
@@ -102,51 +103,11 @@ void thread_sleep( uint32 millisec )
 }
 
 /**************************************************
-	mem_alloc
-**************************************************/
-void* mem_alloc( uint32 size )
-{
-	void* ptr;
-	ptr = malloc( size );
-
-	assert( ptr != NULL );
-
-	return ptr;
-}
-
-/**************************************************
-	mem_alloc_clean
-
-	Initializes a memory block safely like mem_alloc
-	but also initializes the memory to 0.
-**************************************************/
-void* mem_alloc_clean( uint32 size )
-{
-	void* ptr;
-	ptr = malloc( size );
-
-	assert( ptr != NULL );
-
-	memset( ptr, 0, size );
-	return ptr;
-}
-
-/**************************************************
-	mem_free
-**************************************************/
-void mem_free( void* ptr )
-{
-	if ( !ptr ) return;
-	free( ptr );
-}
-
-
-/**************************************************
 	get_tick_count
 **************************************************/
 uint32 get_tick_count( void )
 {
-	return (uint32)GetTickCount();
+	return (uint32)GetTickCount64();
 }
 
 /**************************************************

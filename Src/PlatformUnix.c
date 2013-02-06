@@ -83,53 +83,6 @@ void thread_sleep( uint32 millisec )
 }
 
 /**************************************************
-	mem_alloc
-**************************************************/
-void* mem_alloc( uint32 size )
-{
-	void* ptr;
-	ptr = malloc( size );
-
-	if ( !ptr )
-	{
-		// TODO: Add a message or something nicer here. For now, just kill the app.
-		exit( EXIT_FAILURE );
-	}
-
-	return ptr;
-}
-
-/**************************************************
-	mem_alloc_clean
-
-	Initializes a memory block safely like mem_alloc
-	but also initializes the memory to 0.
-**************************************************/
-void* mem_alloc_clean( uint32 size )
-{
-	void* ptr;
-	ptr = malloc( size );
-
-	if ( !ptr )
-	{
-		// TODO: Add a message or something nicer here. For now, just kill the app.
-		exit( EXIT_FAILURE );
-	}
-
-	memset( ptr, 0, size );
-	return ptr;
-}
-
-/**************************************************
-	mem_free
-**************************************************/
-void mem_free( void* ptr )
-{
-	if ( !ptr ) return;
-	free( ptr );
-}
-
-/**************************************************
 	get_tick_count
 **************************************************/
 uint32 get_tick_count( void )

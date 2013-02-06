@@ -15,6 +15,7 @@
 #define __LIB_PLATFORM_H
 
 #include "stdtypes.h"
+#include "Platform/Alloc.h"
 
 #if defined( _WIN32 )
 	typedef uint32 ( __stdcall  *thread_func_t )( void* args );
@@ -51,13 +52,6 @@ MYLLY_API const char*			lib_error						( void );
 //
 MYLLY_API int					thread_create					( thread_func_t func, void* arguments );
 MYLLY_API void					thread_sleep					( uint32 millisec );
-
-//
-// Safe memory allocation functions
-//
-MYLLY_API void*					mem_alloc						( uint32 size );
-MYLLY_API void*					mem_alloc_clean					( uint32 size );
-MYLLY_API void					mem_free						( void* ptr );
 
 //
 // Time/timer functions
