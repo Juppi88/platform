@@ -45,13 +45,15 @@ systimer_t* systimer_create( float interval )
 		_timerfreq = (float)frequency.QuadPart;
 	}
 
-	timer = (systimer_t*)mem_alloc( sizeof(*timer) );
+	timer = (struct systimer_s*)mem_alloc( sizeof(*timer) );
 
 	timer->handle				= CreateWaitableTimer( NULL, TRUE, NULL );
 	timer->interval.QuadPart	= (LONGLONG)( (double)interval * -10000000.0 );
 
 	QueryPerformanceCounter( &timer->prev_tick );
-	SetWaitableTimer( timer->handle, &timer->interval, 0, NULL, NULL, 0 );
+
+	if ( timer->handle )
+		SetWaitableTimer( timer->handle, &timer->interval, 0, NULL, NULL, 0 );
 
 	return (systimer_t*)timer;
 }

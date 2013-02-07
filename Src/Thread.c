@@ -44,6 +44,7 @@ void thread_sleep( uint32 msec )
 //////////////////////////////////////////////////////////////////////////
 
 #include <pthread.h>
+#include <unistd.h>
 
 int thread_create( thread_func_t func, void* arguments )
 {

@@ -140,9 +140,11 @@ void copy_to_clipboard( const char_t* text )
 	if ( !OpenClipboard( NULL ) ) return;
 
 	size = mstrsize( text );
-	mem = GlobalAlloc( GMEM_DDESHARE, size );
 
-	data = (char*)GlobalLock( mem );
+	mem = GlobalAlloc( GMEM_DDESHARE, size );
+	if ( !mem ) return;
+
+	data = (char_t*)GlobalLock( mem );
 
 	mstrcpy( data, text, size );
 

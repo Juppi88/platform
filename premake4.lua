@@ -17,6 +17,6 @@ project "Lib-Platform"
 	-- Windows specific stuff
 	configuration "windows"
 		targetextension ".lib"
-		buildoptions { "/wd4206 /wd4054" } -- C4206: translation unit is empty, C4054: cast from 'FARPROC' to 'void*'
+		buildoptions { "/wd4054" } -- C4054: cast from 'FARPROC' to 'void*'
 		configuration "Debug" targetname "platformd"
 		configuration "Release" targetname "platform"

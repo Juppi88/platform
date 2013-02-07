@@ -26,7 +26,11 @@ char* get_working_directory( char* buffer, size_t len )
 
 void exit_app_with_error( const char_t* errormsg )
 {
-	MessageBox( 0, errormsg, "Error", MB_OK );
+	if ( errormsg && *errormsg )
+	{
+		MessageBox( 0, errormsg, "Error", MB_OK );
+	}
+
 	SetForegroundWindow( HWND_DESKTOP );
 	ExitProcess( 1 );
 }
@@ -37,6 +41,7 @@ void exit_app_with_error( const char_t* errormsg )
 // POSIX implementation
 //////////////////////////////////////////////////////////////////////////
 
+#include <unistd.h>
 #include <stdlib.h>
 
 char* get_working_directory( char* buffer, size_t len )
