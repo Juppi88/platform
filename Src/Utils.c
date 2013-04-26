@@ -31,7 +31,6 @@ void exit_app_with_error( const char_t* errormsg )
 		MessageBox( 0, errormsg, "Error", MB_OK );
 	}
 
-	SetForegroundWindow( HWND_DESKTOP );
 	ExitProcess( 1 );
 }
 
