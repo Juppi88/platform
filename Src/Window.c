@@ -125,6 +125,11 @@ void set_window_size( syswindow_t* window, uint16 w, uint16 h )
 	SetWindowPos( (HWND)window, HWND_TOP, 0, 0, w, h, SWP_NOMOVE );
 }
 
+void redraw_window( syswindow_t* window )
+{
+	RedrawWindow( (HWND)window, NULL, NULL, RDW_INTERNALPAINT );
+}
+
 #ifdef MYLLY_UNICODE
 UINT data_mode = CF_UNICODETEXT;
 #else
