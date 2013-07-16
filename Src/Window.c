@@ -20,7 +20,7 @@
 
 #include "Stringy/Stringy.h"
 
-syswindow_t* create_system_window( int x, int y, int w, int h, char_t* title, bool border )
+syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool border )
 {
 	WNDCLASS wc;
 	HWND window;
@@ -39,12 +39,12 @@ syswindow_t* create_system_window( int x, int y, int w, int h, char_t* title, bo
 	{
 		window = CreateWindowEx( (WS_EX_WINDOWEDGE|WS_EX_APPWINDOW), wc.lpszClassName, title,
 			(WS_VISIBLE|WS_OVERLAPPEDWINDOW|WS_CLIPSIBLINGS|WS_CLIPCHILDREN) & ~(WS_MINIMIZEBOX|WS_MAXIMIZEBOX|WS_THICKFRAME),
-			x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL );
+			x, y, (int32)w, (int32)h, NULL, NULL, GetModuleHandle(NULL), NULL );
 	}
 	else
 	{
 		window = CreateWindowEx( WS_EX_APPWINDOW, wc.lpszClassName, title,
-			WS_POPUP, x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL );
+			WS_POPUP, x, y, (int32)w, (int32)h, NULL, NULL, GetModuleHandle(NULL), NULL );
 
 		SetWindowLong( window, GWL_STYLE, 0 );
 	}
@@ -66,7 +66,7 @@ void destroy_system_window( syswindow_t* window )
 void process_window_messages( syswindow_t* window, bool (*callback)(void*) )
 {
 	MSG msg;
-	
+
 	while ( PeekMessage( &msg, (HWND)window, 0, 0, PM_REMOVE ) )
 	{
 		if ( callback )
@@ -84,28 +84,28 @@ bool is_window_visible( syswindow_t* window )
 	return IsWindowVisible( (HWND)window ) ? true : false;
 }
 
-void window_pos_to_screen( syswindow_t* window, uint16* x, uint16* y )
+void window_pos_to_screen( syswindow_t* window, int16* x, int16* y )
 {
 	POINT p;
-	p.x = (int)*x, p.y = (int)*y;
+	p.x = *x, p.y = *y;
 
 	ClientToScreen( (HWND)window, &p );
 
-	*x = (uint16)p.x;
-	*y = (uint16)p.y;
+	*x = (int16)p.x;
+	*y = (int16)p.y;
 }
 
-void get_window_pos( syswindow_t* window, uint16* x, uint16* y )
+void get_window_pos( syswindow_t* window, int16* x, int16* y )
 {
 	RECT rect;
 
 	GetWindowRect( (HWND)window, &rect );
 
-	*x = (uint16)rect.left;
-	*y = (uint16)rect.top;
+	*x = (int16)rect.left;
+	*y = (int16)rect.top;
 }
 
-void set_window_pos( syswindow_t* window, uint16 x, uint16 y )
+void set_window_pos( syswindow_t* window, int16 x, int16 y )
 {
 	SetWindowPos( (HWND)window, HWND_TOP, x, y, 0, 0, SWP_NOSIZE );
 }
@@ -166,7 +166,7 @@ const char_t* paste_from_clipboard( void )
 	if ( !IsClipboardFormatAvailable( data_mode ) ) return NULL;
 
 	mem = GetClipboardData( data_mode );
-	
+
 	if ( text ) mem_free( text ); // Free previously pasted text
 	data = (const char_t*)GlobalLock( mem );
 
@@ -224,6 +224,192 @@ void set_mouse_cursor( MOUSECURSOR cursor )
 // X11 implementation
 //////////////////////////////////////////////////////////////////////////
 
-// TODO!
+#include <X11/Xatom.h>
+
+Display* display = NULL;
+uint32 refcount = 0;
+
+syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool border )
+{
+	Window wnd;
+	int screen;
+	syswindow_t* window;
+
+	if ( display == NULL ) display = XOpenDisplay( NULL );
+	if ( display == NULL ) return NULL;
+
+	refcount++; // Display reference count
+
+	screen = DefaultScreen( display );
+	wnd = XCreateSimpleWindow( display, RootWindow( display, screen ), x, y, w, h, border ? 1 : 0,
+							   BlackPixel( display, screen ), WhitePixel( display, screen ) );
+
+	XSelectInput( display, wnd, ExposureMask|KeyPressMask|KeyReleaseMask|PointerMotionMask|ButtonPressMask|ButtonReleaseMask );
+	XMapWindow( display, wnd );
+	XStoreName( display, wnd, title );
+
+	window = mem_alloc( sizeof(*window) );
+	window->display = display;
+	window->wnd = wnd;
+
+	return window;
+}
+
+void destroy_system_window( syswindow_t* window )
+{
+	if ( window == NULL ) return;
+
+	XDestroyWindow( window->display, window->wnd );
+
+	if ( --refcount == 0 )
+		XCloseDisplay( window->display );
+
+	mem_free( window );
+}
+
+void process_window_messages( syswindow_t* window, bool (*callback)(void*) )
+{
+	XEvent event;
+
+	if ( window == NULL ) return;
+
+	while ( XPending( window->display ) )
+	{
+		XNextEvent( window->display, &event );
+
+		if ( callback )
+			callback( &event );
+	}
+}
+
+bool is_window_visible( syswindow_t* window )
+{
+	// Well, this seems fucked up.
+	// TODO: Fix it.
+	return true;
+
+	/*Atom actual_type, state;
+	int actual_format;
+	unsigned long i, num_items, bytes_after;
+	Atom* atoms;
+
+	if ( window == NULL ) return false;
+
+	atoms = NULL;
+	state = XInternAtom( window->display, "_NET_WM_STATE", True );
+
+	XGetWindowProperty( window->display, window->wnd, state, 0, 1024, False, XA_ATOM,
+						&actual_type, &actual_format, &num_items, &bytes_after, (unsigned char**)&atoms );
+
+	for ( i = 0; i < num_items; ++i )
+	{
+		if ( atoms[i] == state )
+		{
+			XFree( atoms );
+			return true;
+		}
+	}
+
+	XFree( atoms );
+	return false;*/
+}
+
+void window_pos_to_screen( syswindow_t* window, int16* x, int16* y )
+{
+	int x_out, y_out;
+	Window child;
+
+	if ( window == NULL )
+	{
+		*x = 0;
+		*y = 0;
+		return;
+	}
+
+	XTranslateCoordinates( window->display, window->wnd, RootWindow( window->display, window->wnd ),
+						   *x, *y, &x_out, &y_out, &child );
+
+	*x = (int16)x_out;
+	*y = (int16)y_out;
+}
+
+void get_window_pos( syswindow_t* window, int16* x, int16* y )
+{
+	int x_out, y_out;
+	Window child;
+
+
+	if ( window == NULL )
+	{
+		*x = 0;
+		*y = 0;
+		return;
+	}
+
+	XTranslateCoordinates( window->display, window->wnd, RootWindow( window->display, window->wnd ),
+						   0, 0, &x_out, &y_out, &child );
+
+	*x = (int16)x_out;
+	*y = (int16)y_out;
+}
+
+void set_window_pos( syswindow_t* window, int16 x, int16 y )
+{
+	XWindowChanges xwc;
+
+	if ( window == NULL ) return;
+
+	xwc.x = x;
+	xwc.y = y;
+
+	XConfigureWindow( window->display, window->wnd, CWX|CWY, &xwc );
+}
+
+void get_window_size( syswindow_t* window, uint16* w, uint16* h )
+{
+	XWindowAttributes xwa;
+
+	if ( window == NULL )
+	{
+		*w = 0;
+		*h = 0;
+		return;
+	}
+
+	XGetWindowAttributes( window->display, window->wnd, &xwa );
+
+	*w = (uint16)xwa.width;
+	*h = (uint16)xwa.height;
+}
+
+void set_window_size( syswindow_t* window, uint16 w, uint16 h )
+{
+	XWindowChanges xwc;
+
+	if ( window == NULL ) return;
+
+	xwc.width = (int)w;
+	xwc.height = (int)h;
+
+	XConfigureWindow( window->display, window->wnd, CWWidth|CWHeight, &xwc );
+}
+
+void copy_to_clipboard( const char_t* text )
+{
+	// TODO: Add copy_to_clipboard
+	UNREFERENCED_PARAM( text );
+}
+
+const char_t* paste_from_clipboard( void )
+{
+	// TODO: Add paste_from_clipboard
+	return NULL;
+}
+
+void set_mouse_cursor( MOUSECURSOR cursor )
+{
+	// TODO: Add set_mouse_cursor
+	UNREFERENCED_PARAM( cursor );
+}
 
 #endif
