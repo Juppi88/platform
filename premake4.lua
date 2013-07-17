@@ -4,7 +4,7 @@ project "Lib-Platform"
 	kind "StaticLib"
 	language "C"
 	files { "**.h", "**.c", "premake4.lua" }
-	vpaths { [""] = { "../Libraries/Platform/Src", "../Libraries/Platform" } }
+	vpaths { [""] = { "../Libraries/Platform" } }
 	includedirs { ".", ".." }
 	location ( "../../Projects/" .. os.get() .. "/" .. _ACTION )
 	
