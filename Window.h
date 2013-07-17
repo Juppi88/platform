@@ -36,6 +36,7 @@ typedef void syswindow_t;
 typedef struct syswindow_t {
 	Display* display;
 	Window wnd;
+	Window root;
 } syswindow_t;
 
 #endif

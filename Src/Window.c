@@ -234,11 +234,38 @@ void set_mouse_cursor( MOUSECURSOR cursor )
 Display* display = NULL;
 uint32 refcount = 0;
 
+struct MWMHints
+{
+    uint32 flags;
+    uint32 functions;
+    uint32 decorations;
+    int32 input_mode;
+    uint32 status;
+};
+
+enum
+{
+    MWM_HINTS_FUNCTIONS		= 1 << 0,
+    MWM_HINTS_DECORATIONS	= 1 << 1,
+};
+
+enum
+{
+    MWM_FUNC_ALL		= 1 << 0,
+    MWM_FUNC_RESIZE		= 1 << 1,
+    MWM_FUNC_MOVE		= 1 << 2,
+    MWM_FUNC_MINIMIZE	= 1 << 3,
+    MWM_FUNC_MAXIMIZE	= 1 << 4,
+    MWM_FUNC_CLOSE		= 1 << 5,
+};
+
 syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool border )
 {
 	Window wnd;
 	int screen;
 	syswindow_t* window;
+	struct MWMHints hints;
+	Atom prop;
 
 	if ( display == NULL ) display = XOpenDisplay( NULL );
 	if ( display == NULL ) return NULL;
@@ -256,6 +283,18 @@ syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const c
 	window = mem_alloc( sizeof(*window) );
 	window->display = display;
 	window->wnd = wnd;
+	window->root = RootWindow( display, DefaultScreen( display ) );
+
+	if ( !border )
+	{
+		memset( &hints, 0, sizeof(hints) );
+		hints.flags = MWM_HINTS_DECORATIONS;
+		hints.decorations = 0;
+
+		prop = XInternAtom( display, "_MOTIF_WM_HINTS", False );
+
+		XChangeProperty( display, wnd, prop, prop, 32, PropModeReplace, (uint8*)&hints, 5 );
+	}
 
 	return window;
 }
@@ -331,8 +370,8 @@ void window_pos_to_screen( syswindow_t* window, int16* x, int16* y )
 		return;
 	}
 
-	XTranslateCoordinates( window->display, window->wnd, RootWindow( window->display, window->wnd ),
-						   *x, *y, &x_out, &y_out, &child );
+	XTranslateCoordinates( window->display, window->wnd, window->root,
+						   (int32)*x, (int32)*y, &x_out, &y_out, &child );
 
 	*x = (int16)x_out;
 	*y = (int16)y_out;
@@ -351,7 +390,7 @@ void get_window_pos( syswindow_t* window, int16* x, int16* y )
 		return;
 	}
 
-	XTranslateCoordinates( window->display, window->wnd, RootWindow( window->display, window->wnd ),
+	XTranslateCoordinates( window->display, window->wnd, window->root,
 						   0, 0, &x_out, &y_out, &child );
 
 	*x = (int16)x_out;
@@ -397,6 +436,29 @@ void set_window_size( syswindow_t* window, uint16 w, uint16 h )
 	xwc.height = (int)h;
 
 	XConfigureWindow( window->display, window->wnd, CWWidth|CWHeight, &xwc );
+}
+
+void redraw_window( syswindow_t* window )
+{
+	XWindowAttributes xwa;
+	XExposeEvent event;
+
+	if ( window == NULL ) return;
+
+	XGetWindowAttributes( window->display, window->wnd, &xwa );
+
+	event.type = Expose;
+	event.serial = 0;
+	event.send_event = True;
+	event.display = window->display;
+	event.window = window->wnd;
+	event.x = 0;
+	event.y = 0;
+	event.width = xwa.width;
+	event.height = xwa.height;
+	event.count = 0;
+
+	XSendEvent( window->display, window->wnd, False, ExposureMask, (XEvent*)&event );
 }
 
 void copy_to_clipboard( const char_t* text )
