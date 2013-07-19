@@ -25,6 +25,8 @@ typedef enum MOUSECURSOR
 	NUM_CURSORS
 } MOUSECURSOR;
 
+typedef void ( *clip_paste_cb )( const char* pasted, void* data );
+
 #ifdef _WIN32
 
 typedef void syswindow_t;
@@ -43,7 +45,7 @@ typedef struct syswindow_t {
 
 __BEGIN_DECLS
 
-MYLLY_API syswindow_t*		create_system_window			( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool border );
+MYLLY_API syswindow_t*		create_system_window			( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool decoration );
 MYLLY_API void				destroy_system_window			( syswindow_t* window );
 MYLLY_API void				process_window_messages			( syswindow_t* window, bool (*callback)(void*) );
 MYLLY_API bool				is_window_visible				( syswindow_t* window );
@@ -56,8 +58,12 @@ MYLLY_API void				set_window_size					( syswindow_t* window, uint16 x, uint16 y 
 
 MYLLY_API void				redraw_window					( syswindow_t* window );
 
-MYLLY_API void				copy_to_clipboard				( const char_t* text );
-MYLLY_API const char_t*		paste_from_clipboard			( void );
+MYLLY_API void				clipboard_copy					( syswindow_t* window, const char_t* text );
+MYLLY_API void				clipboard_paste					( syswindow_t* window, clip_paste_cb cb, void* data );
+
+#ifndef _WIN32
+MYLLY_API void				clipboard_handle_event			( syswindow_t* window, void* packet );
+#endif
 
 MYLLY_API void				set_mouse_cursor				( MOUSECURSOR cursor );
 

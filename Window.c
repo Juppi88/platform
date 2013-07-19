@@ -11,6 +11,10 @@
 
 #include "Platform/Window.h"
 #include "Platform/Alloc.h"
+#include "Stringy/Stringy.h"
+
+static clip_paste_cb paste_cb = NULL;
+static void* paste_data = NULL;
 
 #ifdef _WIN32
 
@@ -18,9 +22,7 @@
 // Win32 implementation
 //////////////////////////////////////////////////////////////////////////
 
-#include "Stringy/Stringy.h"
-
-syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool border )
+syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool decoration )
 {
 	WNDCLASS wc;
 	HWND window;
@@ -35,7 +37,7 @@ syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const c
 
 	RegisterClass( &wc );
 
-	if ( border )
+	if ( decoration )
 	{
 		window = CreateWindowEx( (WS_EX_WINDOWEDGE|WS_EX_APPWINDOW), wc.lpszClassName, title,
 			(WS_VISIBLE|WS_OVERLAPPEDWINDOW|WS_CLIPSIBLINGS|WS_CLIPCHILDREN) & ~(WS_MINIMIZEBOX|WS_MAXIMIZEBOX|WS_THICKFRAME),
@@ -231,8 +233,11 @@ void set_mouse_cursor( MOUSECURSOR cursor )
 
 #include <X11/Xatom.h>
 
-Display* display = NULL;
-uint32 refcount = 0;
+static Display*	display				= NULL;
+static uint32	display_refcount	= 0;
+static size_t	clipbrd_buf_len		= 0;
+static char		clipbrd_buf[1024];
+
 
 struct MWMHints
 {
@@ -259,7 +264,7 @@ enum
     MWM_FUNC_CLOSE		= 1 << 5,
 };
 
-syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool border )
+syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool decoration )
 {
 	Window wnd;
 	int screen;
@@ -270,10 +275,10 @@ syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const c
 	if ( display == NULL ) display = XOpenDisplay( NULL );
 	if ( display == NULL ) return NULL;
 
-	refcount++; // Display reference count
+	display_refcount++; // Display reference count
 
 	screen = DefaultScreen( display );
-	wnd = XCreateSimpleWindow( display, RootWindow( display, screen ), x, y, w, h, border ? 1 : 0,
+	wnd = XCreateSimpleWindow( display, RootWindow( display, screen ), x, y, w, h, decoration ? 1 : 0,
 							   BlackPixel( display, screen ), WhitePixel( display, screen ) );
 
 	XSelectInput( display, wnd, ExposureMask|KeyPressMask|KeyReleaseMask|PointerMotionMask|ButtonPressMask|ButtonReleaseMask );
@@ -285,7 +290,7 @@ syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const c
 	window->wnd = wnd;
 	window->root = RootWindow( display, DefaultScreen( display ) );
 
-	if ( !border )
+	if ( !decoration )
 	{
 		memset( &hints, 0, sizeof(hints) );
 		hints.flags = MWM_HINTS_DECORATIONS;
@@ -305,7 +310,7 @@ void destroy_system_window( syswindow_t* window )
 
 	XDestroyWindow( window->display, window->wnd );
 
-	if ( --refcount == 0 )
+	if ( --display_refcount == 0 )
 		XCloseDisplay( window->display );
 
 	mem_free( window );
@@ -461,16 +466,92 @@ void redraw_window( syswindow_t* window )
 	XSendEvent( window->display, window->wnd, False, ExposureMask, (XEvent*)&event );
 }
 
-void copy_to_clipboard( const char_t* text )
+void clipboard_copy( syswindow_t* window, const char_t* text )
 {
-	// TODO: Add copy_to_clipboard
-	UNREFERENCED_PARAM( text );
+	Atom atom;
+
+	if ( window == NULL ) return;
+	if ( text == NULL ) return;
+
+	atom = XInternAtom( window->display, "CLIPBOARD", True );
+	if ( atom == None ) return;
+
+	mstrcpy( (char_t*)clipbrd_buf, text, sizeof(clipbrd_buf)/sizeof(char_t) );
+	clipbrd_buf_len = mstrlen( text );
+
+	XSetSelectionOwner( window->display, atom, window->wnd, CurrentTime );
 }
 
-const char_t* paste_from_clipboard( void )
+void clipboard_paste( syswindow_t* window, clip_paste_cb cb, void* data )
 {
-	// TODO: Add paste_from_clipboard
-	return NULL;
+	Atom atom;
+
+	if ( window == NULL ) return;
+
+	atom = XInternAtom( window->display, "CLIPBOARD", True );
+	if ( atom == None ) return;
+
+	paste_cb = cb;
+	paste_data = data;
+
+	XConvertSelection( window->display, atom, XA_STRING, XA_STRING, window->wnd, CurrentTime );
+}
+
+void clipboard_handle_event( syswindow_t* window, void* packet )
+{
+	XSelectionEvent* event;
+	XSelectionRequestEvent* select;
+	XEvent response;
+	Atom type;
+	int32 format;
+	unsigned long items, bytes;
+	uint8* buf;
+
+	if ( window == NULL ) return;
+	event = (XSelectionEvent*)packet;
+
+	switch ( event->type )
+	{
+	case SelectionNotify:
+		if ( event->property == None )
+		{
+			if ( paste_cb ) paste_cb( NULL, paste_data );
+
+			paste_cb = NULL;
+			paste_data = NULL;
+			break;
+		}
+
+		XGetWindowProperty( window->display, window->wnd, event->property,
+							0, (~0L), False, AnyPropertyType, &type, &format,
+							&items, &bytes, &buf );
+
+		paste_cb( (const char*)buf, paste_data );
+
+		paste_cb = NULL;
+		paste_data = NULL;
+		break;
+
+	case SelectionRequest:
+		select = (XSelectionRequestEvent*)event;
+
+		XChangeProperty( window->display, select->requestor, select->property,
+						 select->target, 8, PropModeReplace, (uint8*)clipbrd_buf, (int32)clipbrd_buf_len );
+
+		memset( &response, 0, sizeof(response) );
+
+		response.xselection.type = SelectionNotify;
+		response.xselection.send_event = True;
+		response.xselection.display = select->display;
+		response.xselection.requestor = select->requestor;
+		response.xselection.selection = select->selection;
+		response.xselection.target = select->target;
+		response.xselection.time = select->time;
+		response.xselection.property = select->property;
+
+		XSendEvent( window->display, select->requestor, False, NoEventMask, &response );
+		break;
+	}
 }
 
 void set_mouse_cursor( MOUSECURSOR cursor )
