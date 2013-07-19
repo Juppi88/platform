@@ -13,9 +13,6 @@
 #include "Platform/Alloc.h"
 #include "Stringy/Stringy.h"
 
-static clip_paste_cb paste_cb = NULL;
-static void* paste_data = NULL;
-
 #ifdef _WIN32
 
 //////////////////////////////////////////////////////////////////////////
@@ -138,11 +135,13 @@ UINT data_mode = CF_UNICODETEXT;
 UINT data_mode = CF_TEXT;
 #endif
 
-void copy_to_clipboard( const char_t* text )
+void clipboard_copy( syswindow_t* window, const char_t* text )
 {
 	size_t size;
 	HGLOBAL mem;
 	char_t* data;
+
+	UNREFERENCED_PARAM( window );
 
 	if ( !OpenClipboard( NULL ) ) return;
 
@@ -162,15 +161,19 @@ void copy_to_clipboard( const char_t* text )
 	CloseClipboard();
 }
 
-const char_t* paste_from_clipboard( void )
+void clipboard_paste( syswindow_t* window, clip_paste_cb cb, void* cbdata )
 {
 	HANDLE mem;
 	size_t size;
 	const char_t* data;
 	static char_t* text = NULL;
 
-	if ( !OpenClipboard( NULL ) ) return NULL;
-	if ( !IsClipboardFormatAvailable( data_mode ) ) return NULL;
+	UNREFERENCED_PARAM( window );
+
+	if ( cb == NULL ) return;
+
+	if ( !OpenClipboard( NULL ) ) return;
+	if ( !IsClipboardFormatAvailable( data_mode ) ) return;
 
 	mem = GetClipboardData( data_mode );
 
@@ -186,7 +189,7 @@ const char_t* paste_from_clipboard( void )
 
 	CloseClipboard();
 
-	return text;
+	cb( text, cbdata );
 }
 
 void set_mouse_cursor( MOUSECURSOR cursor )
@@ -233,11 +236,12 @@ void set_mouse_cursor( MOUSECURSOR cursor )
 
 #include <X11/Xatom.h>
 
-static Display*	display				= NULL;
-static uint32	display_refcount	= 0;
-static size_t	clipbrd_buf_len		= 0;
-static char		clipbrd_buf[1024];
-
+static Display*			display				= NULL;
+static uint32			display_refcount	= 0;
+static clip_paste_cb	paste_cb			= NULL;
+static void*			paste_data			= NULL;
+static size_t			clipbrd_buf_len		= 0;
+static char				clipbrd_buf[1024];
 
 struct MWMHints
 {
