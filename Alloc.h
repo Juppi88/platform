@@ -56,7 +56,6 @@ static __inline void mem_free( void* ptr )
 		{ ptr = _malloca( size ); } \
 	__except ( GetExceptionCode() == STATUS_STACK_OVERFLOW ) \
 		{ exit( EXIT_FAILURE ); }
-}
 
 #define mem_stack_free( ptr ) \
 	_freea( ptr )
