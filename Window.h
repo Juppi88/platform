@@ -37,7 +37,7 @@ typedef void syswindow_t;
 
 typedef struct syswindow_t {
 	Display* display;
-	Window wnd;
+	Window window;
 	Window root;
 } syswindow_t;
 
@@ -65,7 +65,7 @@ MYLLY_API void				clipboard_paste					( syswindow_t* window, clip_paste_cb cb, v
 MYLLY_API void				clipboard_handle_event			( syswindow_t* window, void* packet );
 #endif
 
-MYLLY_API void				set_mouse_cursor				( MOUSECURSOR cursor );
+MYLLY_API void				set_mouse_cursor				( syswindow_t* window, MOUSECURSOR cursor );
 
 __END_DECLS
 

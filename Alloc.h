@@ -22,8 +22,6 @@
 static void*	mem_alloc		( size_t size );
 static void*	mem_alloc_clean	( size_t size );
 static void		mem_free		( void* ptr );
-static void*	mem_stack_alloc	( size_t size );
-static void		mem_stack_free	( void* ptr );
 
 static __inline void* mem_alloc( size_t size )
 {
@@ -53,36 +51,24 @@ static __inline void mem_free( void* ptr )
 
 #ifdef _WIN32
 
-static __inline void* mem_stack_alloc( size_t size )
-{
-	__try
-	{
-		return _malloca( size );
-	}
-	__except ( GetExceptionCode() == STATUS_STACK_OVERFLOW )
-	{
-		exit( EXIT_FAILURE );
-	}
+#define mem_stack_alloc( ptr, size ) \
+	__try \
+		{ ptr = _malloca( size ); } \
+	__except ( GetExceptionCode() == STATUS_STACK_OVERFLOW ) \
+		{ exit( EXIT_FAILURE ); }
 }
 
-static __inline void mem_stack_free( void* ptr )
-{
-	_freea( ptr );
-}
+#define mem_stack_free( ptr ) \
+	_freea( ptr )
 
 #else
 
 #include <alloca.h>
 
-static __inline void* mem_stack_alloc( size_t size )
-{
-	return alloca( size );
-}
+#define mem_stack_alloc( ptr, size ) \
+	ptr = alloca( size )
 
-static __inline void mem_stack_free( void* ptr )
-{
-	return;
-}
+#define mem_stack_free( ptr )
 
 #endif
 

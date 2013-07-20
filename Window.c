@@ -192,9 +192,11 @@ void clipboard_paste( syswindow_t* window, clip_paste_cb cb, void* cbdata )
 	cb( text, cbdata );
 }
 
-void set_mouse_cursor( MOUSECURSOR cursor )
+void set_mouse_cursor( syswindow_t* window, MOUSECURSOR cursor )
 {
 	static HCURSOR cursors[NUM_CURSORS] = { NULL };
+
+	UNREFERENCED_PARAM( window );
 
 	if ( cursor >= NUM_CURSORS ) return;
 
@@ -242,6 +244,12 @@ static clip_paste_cb	paste_cb			= NULL;
 static void*			paste_data			= NULL;
 static size_t			clipbrd_buf_len		= 0;
 static char				clipbrd_buf[1024];
+
+#define XC_X_cursor 0
+#define XC_crosshair 34
+#define XC_fleur 52
+#define XC_left_ptr 68
+#define XC_xterm 152
 
 struct MWMHints
 {
@@ -291,7 +299,7 @@ syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const c
 
 	window = mem_alloc( sizeof(*window) );
 	window->display = display;
-	window->wnd = wnd;
+	window->window = wnd;
 	window->root = RootWindow( display, DefaultScreen( display ) );
 
 	if ( !decoration )
@@ -312,7 +320,7 @@ void destroy_system_window( syswindow_t* window )
 {
 	if ( window == NULL ) return;
 
-	XDestroyWindow( window->display, window->wnd );
+	XDestroyWindow( window->display, window->window );
 
 	if ( --display_refcount == 0 )
 		XCloseDisplay( window->display );
@@ -337,34 +345,10 @@ void process_window_messages( syswindow_t* window, bool (*callback)(void*) )
 
 bool is_window_visible( syswindow_t* window )
 {
-	// Well, this seems fucked up.
-	// TODO: Fix it.
-	return true;
+	XWindowAttributes xwa;
+	XGetWindowAttributes( window->display, window->window, &xwa );
 
-	/*Atom actual_type, state;
-	int actual_format;
-	unsigned long i, num_items, bytes_after;
-	Atom* atoms;
-
-	if ( window == NULL ) return false;
-
-	atoms = NULL;
-	state = XInternAtom( window->display, "_NET_WM_STATE", True );
-
-	XGetWindowProperty( window->display, window->wnd, state, 0, 1024, False, XA_ATOM,
-						&actual_type, &actual_format, &num_items, &bytes_after, (unsigned char**)&atoms );
-
-	for ( i = 0; i < num_items; ++i )
-	{
-		if ( atoms[i] == state )
-		{
-			XFree( atoms );
-			return true;
-		}
-	}
-
-	XFree( atoms );
-	return false;*/
+	return ( xwa.map_state == IsViewable );
 }
 
 void window_pos_to_screen( syswindow_t* window, int16* x, int16* y )
@@ -379,7 +363,7 @@ void window_pos_to_screen( syswindow_t* window, int16* x, int16* y )
 		return;
 	}
 
-	XTranslateCoordinates( window->display, window->wnd, window->root,
+	XTranslateCoordinates( window->display, window->window, window->root,
 						   (int32)*x, (int32)*y, &x_out, &y_out, &child );
 
 	*x = (int16)x_out;
@@ -399,7 +383,7 @@ void get_window_pos( syswindow_t* window, int16* x, int16* y )
 		return;
 	}
 
-	XTranslateCoordinates( window->display, window->wnd, window->root,
+	XTranslateCoordinates( window->display, window->window, window->root,
 						   0, 0, &x_out, &y_out, &child );
 
 	*x = (int16)x_out;
@@ -415,7 +399,7 @@ void set_window_pos( syswindow_t* window, int16 x, int16 y )
 	xwc.x = x;
 	xwc.y = y;
 
-	XConfigureWindow( window->display, window->wnd, CWX|CWY, &xwc );
+	XConfigureWindow( window->display, window->window, CWX|CWY, &xwc );
 }
 
 void get_window_size( syswindow_t* window, uint16* w, uint16* h )
@@ -429,7 +413,7 @@ void get_window_size( syswindow_t* window, uint16* w, uint16* h )
 		return;
 	}
 
-	XGetWindowAttributes( window->display, window->wnd, &xwa );
+	XGetWindowAttributes( window->display, window->window, &xwa );
 
 	*w = (uint16)xwa.width;
 	*h = (uint16)xwa.height;
@@ -444,7 +428,7 @@ void set_window_size( syswindow_t* window, uint16 w, uint16 h )
 	xwc.width = (int)w;
 	xwc.height = (int)h;
 
-	XConfigureWindow( window->display, window->wnd, CWWidth|CWHeight, &xwc );
+	XConfigureWindow( window->display, window->window, CWWidth|CWHeight, &xwc );
 }
 
 void redraw_window( syswindow_t* window )
@@ -454,20 +438,20 @@ void redraw_window( syswindow_t* window )
 
 	if ( window == NULL ) return;
 
-	XGetWindowAttributes( window->display, window->wnd, &xwa );
+	XGetWindowAttributes( window->display, window->window, &xwa );
 
 	event.type = Expose;
 	event.serial = 0;
 	event.send_event = True;
 	event.display = window->display;
-	event.window = window->wnd;
+	event.window = window->window;
 	event.x = 0;
 	event.y = 0;
 	event.width = xwa.width;
 	event.height = xwa.height;
 	event.count = 0;
 
-	XSendEvent( window->display, window->wnd, False, ExposureMask, (XEvent*)&event );
+	XSendEvent( window->display, window->window, False, ExposureMask, (XEvent*)&event );
 }
 
 void clipboard_copy( syswindow_t* window, const char_t* text )
@@ -483,7 +467,7 @@ void clipboard_copy( syswindow_t* window, const char_t* text )
 	mstrcpy( (char_t*)clipbrd_buf, text, sizeof(clipbrd_buf)/sizeof(char_t) );
 	clipbrd_buf_len = mstrlen( text );
 
-	XSetSelectionOwner( window->display, atom, window->wnd, CurrentTime );
+	XSetSelectionOwner( window->display, atom, window->window, CurrentTime );
 }
 
 void clipboard_paste( syswindow_t* window, clip_paste_cb cb, void* data )
@@ -498,7 +482,7 @@ void clipboard_paste( syswindow_t* window, clip_paste_cb cb, void* data )
 	paste_cb = cb;
 	paste_data = data;
 
-	XConvertSelection( window->display, atom, XA_STRING, XA_STRING, window->wnd, CurrentTime );
+	XConvertSelection( window->display, atom, XA_STRING, XA_STRING, window->window, CurrentTime );
 }
 
 void clipboard_handle_event( syswindow_t* window, void* packet )
@@ -526,7 +510,7 @@ void clipboard_handle_event( syswindow_t* window, void* packet )
 			break;
 		}
 
-		XGetWindowProperty( window->display, window->wnd, event->property,
+		XGetWindowProperty( window->display, window->window, event->property,
 							0, (~0L), False, AnyPropertyType, &type, &format,
 							&items, &bytes, &buf );
 
@@ -558,10 +542,41 @@ void clipboard_handle_event( syswindow_t* window, void* packet )
 	}
 }
 
-void set_mouse_cursor( MOUSECURSOR cursor )
+void set_mouse_cursor( syswindow_t* window, MOUSECURSOR cursor )
 {
-	// TODO: Add set_mouse_cursor
-	UNREFERENCED_PARAM( cursor );
+	static Cursor cursors[NUM_CURSORS] = { 0 };
+
+	if ( cursor >= NUM_CURSORS ) return;
+
+	if ( !cursors[cursor] )
+	{
+		// The cursor needs to be loaded first
+		switch ( cursor )
+		{
+		case CURSOR_TEXT:
+			cursors[cursor] = XCreateFontCursor( window->display, XC_xterm );
+			break;
+
+		case CURSOR_CROSSHAIR:
+			cursors[cursor] = XCreateFontCursor( window->display, XC_crosshair );
+			break;
+
+		case CURSOR_MOVE:
+			cursors[cursor] = XCreateFontCursor( window->display, XC_fleur );
+			break;
+
+		case CURSOR_FORBIDDEN:
+			cursors[cursor] = XCreateFontCursor( window->display, XC_X_cursor );
+			break;
+
+		case CURSOR_ARROW:
+		default:
+			cursors[cursor] = XCreateFontCursor( window->display, XC_left_ptr );
+			break;
+		}
+	}
+
+	XDefineCursor( window->display, window->window, cursors[cursor] );
 }
 
 #endif
