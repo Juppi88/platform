@@ -26,6 +26,7 @@ typedef enum MOUSECURSOR
 } MOUSECURSOR;
 
 typedef void ( *clip_paste_cb )( const char* pasted, void* data );
+typedef bool ( *wnd_message_cb )( void* packet );
 
 #ifdef _WIN32
 
@@ -45,9 +46,10 @@ typedef struct syswindow_t {
 
 __BEGIN_DECLS
 
-MYLLY_API syswindow_t*		create_system_window			( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool decoration );
+MYLLY_API syswindow_t*		create_system_window			( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool decoration, wnd_message_cb cb );
 MYLLY_API void				destroy_system_window			( syswindow_t* window );
-MYLLY_API void				process_window_messages			( syswindow_t* window, bool (*callback)(void*) );
+
+MYLLY_API void				process_window_messages			( syswindow_t* window, wnd_message_cb cb );
 MYLLY_API bool				is_window_visible				( syswindow_t* window );
 
 MYLLY_API void				window_pos_to_screen			( syswindow_t* window, int16* x, int16* y );

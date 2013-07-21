@@ -19,31 +19,79 @@
 // Win32 implementation
 //////////////////////////////////////////////////////////////////////////
 
-syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool decoration )
+struct WndCallbacks
+{
+	void ( *window_message )( void* packet );
+};
+
+static LONG_PTR __stdcall wnd_proc( HWND hwnd, uint32 message, WPARAM wparam, LPARAM lparam )
+{
+	struct WndCallbacks* cbstruct;
+	CREATESTRUCT* create;
+	MSG msg;
+
+	switch ( message )
+	{
+	case WM_CREATE:
+		create = (CREATESTRUCT*)lparam;
+		SetWindowLongPtr( hwnd, GWLP_USERDATA, (LONG_PTR)create->lpCreateParams );
+		break;
+
+	case WM_CLOSE:
+		DestroyWindow( hwnd );
+		break;
+
+	case WM_DESTROY:
+		PostQuitMessage( 0 );
+		break;
+	}
+
+	cbstruct = (struct WndCallbacks*)GetWindowLongPtr( hwnd, GWLP_USERDATA );
+	if ( cbstruct )
+	{
+		msg.hwnd = hwnd;
+		msg.message = message;
+		msg.wParam = wparam;
+		msg.lParam = lparam;
+
+		cbstruct->window_message( (void*)&msg );
+	}
+
+	return DefWindowProc( hwnd, message, wparam, lparam );
+}
+
+syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool decoration, wnd_message_cb cb )
 {
 	WNDCLASS wc;
 	HWND window;
+	struct WndCallbacks* cbstruct = NULL;
 
 	ZeroMemory( &wc, sizeof(wc) );
 
 	wc.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DROPSHADOW;
-	wc.lpfnWndProc		= DefWindowProc;
-	wc.hInstance		= GetModuleHandle(NULL);
+	wc.lpfnWndProc		= wnd_proc;
+	wc.hInstance		= GetModuleHandle( NULL );
 	wc.lpszClassName	= _MTEXT("mylly_window");
 	wc.hCursor			= NULL;
 
 	RegisterClass( &wc );
 
+	if ( cb )
+	{
+		cbstruct = (struct WndCallbacks*)mem_alloc( sizeof(*cbstruct) );
+		cbstruct->window_message = cb;
+	}
+
 	if ( decoration )
 	{
 		window = CreateWindowEx( (WS_EX_WINDOWEDGE|WS_EX_APPWINDOW), wc.lpszClassName, title,
 			(WS_VISIBLE|WS_OVERLAPPEDWINDOW|WS_CLIPSIBLINGS|WS_CLIPCHILDREN) & ~(WS_MINIMIZEBOX|WS_MAXIMIZEBOX|WS_THICKFRAME),
-			x, y, (int32)w, (int32)h, NULL, NULL, GetModuleHandle(NULL), NULL );
+			x, y, (int32)w, (int32)h, NULL, NULL, GetModuleHandle(NULL), cbstruct );
 	}
 	else
 	{
 		window = CreateWindowEx( WS_EX_APPWINDOW, wc.lpszClassName, title,
-			WS_POPUP, x, y, (int32)w, (int32)h, NULL, NULL, GetModuleHandle(NULL), NULL );
+			WS_POPUP, x, y, (int32)w, (int32)h, NULL, NULL, GetModuleHandle(NULL), cbstruct );
 
 		SetWindowLong( window, GWL_STYLE, 0 );
 	}
@@ -62,13 +110,16 @@ void destroy_system_window( syswindow_t* window )
 	DestroyWindow( (HWND)window );
 }
 
-void process_window_messages( syswindow_t* window, bool (*callback)(void*) )
+void process_window_messages( syswindow_t* window, wnd_message_cb callback )
 {
 	MSG msg;
+	struct WndCallbacks* cbstruct;
+
+	cbstruct = (struct WndCallbacks*)GetWindowLongPtr( (HWND)window, GWLP_USERDATA );
 
 	while ( PeekMessage( &msg, (HWND)window, 0, 0, PM_REMOVE ) )
 	{
-		if ( callback )
+		if ( callback && cbstruct == NULL )
 		{
 			if ( !callback( (void*)&msg ) ) continue;
 		}
