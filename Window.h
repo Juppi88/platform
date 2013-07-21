@@ -40,6 +40,7 @@ typedef struct syswindow_t {
 	Display* display;
 	Window window;
 	Window root;
+	wnd_message_cb cb;
 } syswindow_t;
 
 #endif

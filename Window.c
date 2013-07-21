@@ -327,7 +327,7 @@ enum
     MWM_FUNC_CLOSE		= 1 << 5,
 };
 
-syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool decoration )
+syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const char_t* title, bool decoration, wnd_message_cb cb )
 {
 	Window wnd;
 	int screen;
@@ -352,6 +352,7 @@ syswindow_t* create_system_window( int32 x, int32 y, uint32 w, uint32 h, const c
 	window->display = display;
 	window->window = wnd;
 	window->root = RootWindow( display, DefaultScreen( display ) );
+	window->cb = cb;
 
 	if ( !decoration )
 	{
@@ -389,7 +390,10 @@ void process_window_messages( syswindow_t* window, bool (*callback)(void*) )
 	{
 		XNextEvent( window->display, &event );
 
-		if ( callback )
+		if ( window->cb )
+			window->cb( &event );
+
+		else if ( callback )
 			callback( &event );
 	}
 }
