@@ -71,4 +71,16 @@ static __inline void mem_free( void* ptr )
 
 #endif
 
+#define SAFE_DELETE(x) \
+	if ( x ) {         \
+		mem_free( x ); \
+		x = NULL;      \
+	}
+
+#define SAFE_DELETE_CPP(x) \
+		if ( x ) {         \
+		delete x;          \
+		x = NULL;          \
+	}
+
 #endif /* __ALLOC_H */

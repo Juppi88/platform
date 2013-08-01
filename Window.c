@@ -231,6 +231,8 @@ void clipboard_paste( syswindow_t* window, clip_paste_cb cb, void* cbdata )
 	if ( text ) mem_free( text ); // Free previously pasted text
 	data = (const char_t*)GlobalLock( mem );
 
+	if ( data == NULL ) return;
+
 	size = mstrsize( data );
 	text = (char_t*)mem_alloc( size );
 
