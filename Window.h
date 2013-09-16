@@ -13,10 +13,11 @@
 #ifndef __LIB_PLATFORM_WINDOW_H
 #define __LIB_PLATFORM_WINDOW_H
 
+#ifndef _PLATFORM_MINIMAL
+
 #include "stdtypes.h"
 
-typedef enum MOUSECURSOR
-{
+typedef enum {
 	CURSOR_ARROW,
 	CURSOR_TEXT,
 	CURSOR_CROSSHAIR,
@@ -72,4 +73,5 @@ MYLLY_API void				set_mouse_cursor				( syswindow_t* window, MOUSECURSOR cursor 
 
 __END_DECLS
 
+#endif /* _PLATFORM_MINIMAL */
 #endif /* __LIB_PLATFORM_WINDOW_H */

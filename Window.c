@@ -9,6 +9,8 @@
  *
  **********************************************************************/
 
+#ifndef _PLATFORM_MINIMAL
+
 #include "Platform/Window.h"
 #include "Platform/Alloc.h"
 #include "Stringy/Stringy.h"
@@ -636,4 +638,5 @@ void set_mouse_cursor( syswindow_t* window, MOUSECURSOR cursor )
 	XDefineCursor( window->display, window->window, cursors[cursor] );
 }
 
-#endif
+#endif /* _WIN32 */
+#endif /* _PLATFORM_MINIMAL */
