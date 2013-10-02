@@ -9,7 +9,7 @@
  *
  **********************************************************************/
 
-#ifndef _PLATFORM_MINIMAL
+#ifndef MYLLY_PLATFORM_MINIMAL
 
 #include "Platform/Window.h"
 #include "Platform/Alloc.h"
@@ -639,4 +639,4 @@ void set_mouse_cursor( syswindow_t* window, MOUSECURSOR cursor )
 }
 
 #endif /* _WIN32 */
-#endif /* _PLATFORM_MINIMAL */
+#endif /* MYLLY_PLATFORM_MINIMAL */

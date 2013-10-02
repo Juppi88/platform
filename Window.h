@@ -13,7 +13,7 @@
 #ifndef __LIB_PLATFORM_WINDOW_H
 #define __LIB_PLATFORM_WINDOW_H
 
-#ifndef _PLATFORM_MINIMAL
+#ifndef MYLLY_PLATFORM_MINIMAL
 
 #include "stdtypes.h"
 
@@ -73,5 +73,5 @@ MYLLY_API void				set_mouse_cursor				( syswindow_t* window, MOUSECURSOR cursor 
 
 __END_DECLS
 
-#endif /* _PLATFORM_MINIMAL */
+#endif /* MYLLY_PLATFORM_MINIMAL */
 #endif /* __LIB_PLATFORM_WINDOW_H */

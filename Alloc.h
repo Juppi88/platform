@@ -23,7 +23,7 @@ static void*	mem_alloc		( size_t size );
 static void*	mem_alloc_clean	( size_t size );
 static void		mem_free		( void* ptr );
 
-static __inline void* mem_alloc( size_t size )
+static MYLLY_INLINE void* mem_alloc( size_t size )
 {
 	void* ptr = malloc( size );
 
@@ -33,7 +33,7 @@ static __inline void* mem_alloc( size_t size )
 	return ptr;
 }
 
-static __inline void* mem_alloc_clean( size_t size )
+static MYLLY_INLINE void* mem_alloc_clean( size_t size )
 {
 	void* ptr = malloc( size );
 
@@ -44,7 +44,7 @@ static __inline void* mem_alloc_clean( size_t size )
 	return ptr;
 }
 
-static __inline void mem_free( void* ptr )
+static MYLLY_INLINE void mem_free( void* ptr )
 {
 	free( ptr );
 }
