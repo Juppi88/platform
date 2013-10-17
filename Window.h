@@ -59,6 +59,7 @@ MYLLY_API void				get_window_pos					( syswindow_t* window, int16* x, int16* y )
 MYLLY_API void				set_window_pos					( syswindow_t* window, int16 x, int16 y );
 MYLLY_API void				get_window_size					( syswindow_t* window, uint16* w, uint16* h );
 MYLLY_API void				set_window_size					( syswindow_t* window, uint16 x, uint16 y );
+MYLLY_API void				get_window_drawable_size		( syswindow_t* window, uint16* w, uint16* h );
 
 MYLLY_API void				redraw_window					( syswindow_t* window );
 

@@ -177,6 +177,16 @@ void set_window_size( syswindow_t* window, uint16 w, uint16 h )
 	SetWindowPos( (HWND)window, HWND_TOP, 0, 0, w, h, SWP_NOMOVE );
 }
 
+void get_window_drawable_size( syswindow_t* window, uint16* w, uint16* h )
+{
+	RECT rect;
+
+	GetClientRect( (HWND)window, &rect );
+
+	*w = (uint16)( rect.right - rect.left );
+	*h = (uint16)( rect.bottom - rect.top );
+}
+
 void redraw_window( syswindow_t* window )
 {
 	RedrawWindow( (HWND)window, NULL, NULL, RDW_INTERNALPAINT );
