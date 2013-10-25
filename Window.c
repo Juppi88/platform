@@ -500,6 +500,18 @@ void set_window_size( syswindow_t* window, uint16 w, uint16 h )
 	XConfigureWindow( window->display, window->window, CWWidth|CWHeight, &xwc );
 }
 
+void get_window_drawable_size( syswindow_t* window, uint16* width, uint16* height )
+{
+	int32 x, y;
+	uint32 w, h, border, depth;
+	Window root;
+
+	XGetGeometry( window->display, window->window, &root, &x, &y, &w, &h, &border, &depth );
+
+	*width = (uint16)w;
+	*height = (uint16)h;
+}
+
 void redraw_window( syswindow_t* window )
 {
 	XWindowAttributes xwa;
