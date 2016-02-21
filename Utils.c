@@ -42,6 +42,7 @@ void exit_app_with_error( const char_t* errormsg )
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 char* get_working_directory( char* buffer, size_t len )
 {
@@ -50,6 +51,7 @@ char* get_working_directory( char* buffer, size_t len )
 
 void exit_app_with_error( const char_t* errormsg )
 {
+	fprintf( stderr, errormsg);
 	exit( EXIT_FAILURE );
 }
 
